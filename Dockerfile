@@ -75,8 +75,14 @@ RUN \
   && su "${USER}"
 
 # Everything from this line onwards will run in the context of the unprivileged user.
+
+COPY --from=build --chown="${USER}":"${USER}" /app/_build/"${MIX_ENV}"/rel ./
+
+COPY rename.sh rename.sh
+
+RUN chown -R ${USER}:${USER} /home/${USER}
+
 USER "${USER}"
 
-COPY --from=build --chown="${USER}":"${USER}" /app/_build/"${MIX_ENV}"/rel/${APP_NAME} ./
-
-CMD bin/hello_phoenix start
+RUN ./rename.sh
+CMD app/bin/app start
