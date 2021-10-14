@@ -38,7 +38,7 @@ COPY priv priv
 # note: if your project uses a tool like https://purgecss.com/,
 # which customizes asset compilation based on what it finds in
 # your Elixir templates, you will need to move the asset compilation
-# down so that `lib` is available.
+# step down so that `lib` is available.
 COPY assets assets
 RUN mix assets.deploy
 
