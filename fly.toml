@@ -7,7 +7,7 @@ kill_timeout = 5
   PORT = "8080"
 
 [deploy]
-  release_command = "app/bin/app eval HelloPhoenix.Release.migrate"
+  release_command = "/app/entry eval HelloPhoenix.Release.migrate"
 
 [[services]]
   http_checks = []
