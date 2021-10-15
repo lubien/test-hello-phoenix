@@ -1,15 +1,19 @@
-ARG MIX_ENV="prod"
+# Find eligible builder and runner images on Docker Hub. We use Ubuntu/Debian instead of
+# Alpine to avoid DNS resolution issues in production.
+# 
+# https://hub.docker.com/r/hexpm/elixir/tags?page=1&name=ubuntu
+# https://hub.docker.com/_/ubuntu?tab=tags
 
-# Find eligible builder and runner images on Docker Hub
-# https://hub.docker.com/r/hexpm/elixir/tags?page=1&name=alpine
-# https://hub.docker.com/_/alpine?tab=tags
-ARG BUILDER_IMAGE="hexpm/elixir:1.12.3-erlang-24.1.2-alpine-3.14.2"
-ARG RUNNER_IMAGE="alpine:3.14.2"
+ARG BUILDER_IMAGE="hexpm/elixir:1.12.3-erlang-24.1.2-ubuntu-groovy-20210325"
+ARG RUNNER_IMAGE="ubuntu:20.10"
+
+ARG MIX_ENV="prod"
 
 FROM ${BUILDER_IMAGE} as builder
 
 # install build dependencies
-RUN apk add --no-cache build-base git python3 curl
+RUN apt-get update -y && apt-get install -y build-essential git python3 curl \
+    && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # prepare build dir
 WORKDIR /app
@@ -58,15 +62,28 @@ RUN mix release
 # start a new build stage so that the final image will only contain
 # the compiled release and other runtime necessities
 FROM ${RUNNER_IMAGE}
+ARG MIX_ENV
+
+RUN apt-get update -y && apt-get install -y libstdc++6 openssl curl libncurses5 locales \
+  && apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+# Set the locale
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
+
+ENV LANG en_US.UTF-8  
+ENV LANGUAGE en_US:en  
+ENV LC_ALL en_US.UTF-8     
 
 WORKDIR "/app"
-RUN apk add --no-cache libstdc++ openssl ncurses-libs && chown nobody:nobody /app
+RUN chown nobody /app
 
-ARG MIX_ENV
 USER nobody
 
-COPY --from=builder --chown=nobody:nobody /app/_build/"${MIX_ENV}"/rel ./
+# Only copy the final release from the build stage
+COPY --from=builder --chown=nobody /app/_build/"${MIX_ENV}"/rel ./
 
+# Create a symlink to the application directory by extracting the directory name. This is required
+# since the release directory will be named after the application, and we don't know that name.
 RUN set -eux; \
   ln -nfs $(basename *)/bin/$(basename *) /app/entry
 
