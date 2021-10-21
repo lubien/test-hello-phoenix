@@ -44,7 +44,12 @@ COPY priv priv
 # your Elixir templates, you will need to move the asset compilation
 # step down so that `lib` is available.
 COPY assets assets
+
+# For Phoenix 1.6 and later, compile assets using esbuild
 RUN mix assets.deploy
+
+# For Phoenix versions earlier than 1.6, compile assets npm
+
 
 # Compile the release
 COPY lib lib
@@ -77,10 +82,10 @@ ENV LC_ALL en_US.UTF-8
 WORKDIR "/app"
 RUN chown nobody /app
 
-USER nobody
-
 # Only copy the final release from the build stage
-COPY --from=builder --chown=nobody /app/_build/"${MIX_ENV}"/rel ./
+COPY --from=builder --chown=nobody:root /app/_build/"${MIX_ENV}"/rel ./
+
+USER nobody
 
 # Create a symlink to the application directory by extracting the directory name. This is required
 # since the release directory will be named after the application, and we don't know that name.
