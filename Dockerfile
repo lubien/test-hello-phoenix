@@ -91,5 +91,5 @@ USER nobody
 # since the release directory will be named after the application, and we don't know that name.
 RUN set -eux; \
   ln -nfs $(basename *)/bin/$(basename *) /app/entry
-
+EXPOSE 8080
 CMD /app/entry start
